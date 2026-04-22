@@ -1,0 +1,60 @@
+import { Navigate, Route, Routes } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminLayout from './layouts/AdminLayout';
+import CategoriesPage from './pages/CategoriesPage';
+import ColorsPage from './pages/ColorsPage';
+import DashboardHomePage from './pages/DashboardHomePage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import MeasurementsPage from './pages/MeasurementsPage';
+import BrandsPage from './pages/BrandsPage';
+import BannersPage from './pages/BannersPage';
+import EventsPage from './pages/EventsPage';
+import ProductCreatePage from './pages/ProductCreatePage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import ProductEditPage from './pages/ProductEditPage';
+import ProductListPage from './pages/ProductListPage';
+import RegisterPage from './pages/RegisterPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import SubCategoriesPage from './pages/SubCategoriesPage';
+import UsersPage from './pages/UsersPage';
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="/dashboard/users" replace />} />
+        <Route path="overview" element={<DashboardHomePage />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="categories" element={<CategoriesPage />} />
+        <Route path="sub-categories" element={<SubCategoriesPage />} />
+        <Route path="brands" element={<BrandsPage />} />
+        <Route path="colors" element={<ColorsPage />} />
+        <Route path="measurements" element={<MeasurementsPage />} />
+        <Route path="events" element={<EventsPage />} />
+        <Route path="banners" element={<BannersPage />} />
+        <Route path="products" element={<Navigate to="/dashboard/products/list" replace />} />
+        <Route path="products/create" element={<ProductCreatePage />} />
+        <Route path="products/list" element={<ProductListPage />} />
+        <Route path="products/:productId/edit" element={<ProductEditPage />} />
+        <Route path="products/:productId" element={<ProductDetailPage />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}

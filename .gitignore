@@ -1,0 +1,16 @@
+.DS_Store
+*/.DS_Store
+node_modules/
+*/node_modules/
+dist/
+*/dist/
+.env
+*.env
+.proenv
+mysql-backups/
+mysql-official/
+frankenphp-local/
+phpmyadmin-local/
+Woodmart/
+cv_output/
+demomessaralivingphoto/

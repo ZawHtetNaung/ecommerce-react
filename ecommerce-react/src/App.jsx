@@ -15,6 +15,9 @@ import ProductCreatePage from './pages/ProductCreatePage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import ProductEditPage from './pages/ProductEditPage';
 import ProductListPage from './pages/ProductListPage';
+import PublicCategoryPage from './pages/PublicCategoryPage';
+import PublicProductDetailPage from './pages/PublicProductDetailPage';
+import PublicSubCategoryProductsPage from './pages/PublicSubCategoryProductsPage';
 import RegisterPage from './pages/RegisterPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import SubCategoriesPage from './pages/SubCategoriesPage';
@@ -24,6 +27,12 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/categories/:categorySlug" element={<PublicCategoryPage />} />
+      <Route path="/categories/:categorySlug/sub-categories/:subCategorySlug" element={<PublicSubCategoryProductsPage />} />
+      <Route
+        path="/categories/:categorySlug/sub-categories/:subCategorySlug/products/:productSlug"
+        element={<PublicProductDetailPage />}
+      />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />

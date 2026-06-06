@@ -274,14 +274,19 @@ export default function HomePage() {
                   category.image_url || (category.image_path ? `${apiBaseUrl}/storage/${category.image_path}` : '');
 
                 return (
-                  <div key={category.id} className="category-chip">
+                  <Link
+                    key={category.id}
+                    to={`/categories/${category.slug}`}
+                    className="category-chip"
+                    aria-label={`Open ${category.name}`}
+                  >
                     {imageUrl ? (
                       <img src={imageUrl} alt={category.name} />
                     ) : (
                       <div className="category-chip-placeholder" />
                     )}
-                  <span>{category.name}</span>
-                  </div>
+                    <span>{category.name}</span>
+                  </Link>
                 );
               })}
             </div>

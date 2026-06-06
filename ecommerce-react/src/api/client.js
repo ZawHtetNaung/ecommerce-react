@@ -64,6 +64,21 @@ export async function fetchPublicEvents() {
   return data;
 }
 
+export async function fetchPublicCategory(categorySlug) {
+  const { data } = await api.get(`/api/public/categories/${categorySlug}`);
+  return data;
+}
+
+export async function fetchPublicSubCategoryProducts(categorySlug, subCategorySlug) {
+  const { data } = await api.get(`/api/public/categories/${categorySlug}/sub-categories/${subCategorySlug}/products`);
+  return data;
+}
+
+export async function fetchPublicProduct(categorySlug, subCategorySlug, productSlug) {
+  const { data } = await api.get(`/api/public/categories/${categorySlug}/sub-categories/${subCategorySlug}/products/${productSlug}`);
+  return data;
+}
+
 export async function createCategory(payload) {
   const config = payload instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
   const { data } = await api.post('/api/categories', payload, config);

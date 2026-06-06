@@ -3,16 +3,101 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProductImage;
+use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductImage;
+use App\Models\SubCategory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
+    public function publicIndexBySubCategory(string $categorySlug, string $subCategorySlug)
+    {
+        $category = Category::query()
+            ->select(['id', 'name', 'slug', 'description', 'image_path'])
+            ->where('slug', $categorySlug)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $subCategory = SubCategory::query()
+            ->select(['id', 'category_id', 'name', 'slug', 'description', 'image_path'])
+            ->where('category_id', $category->id)
+            ->where('slug', $subCategorySlug)
+            ->where('is_active', true)
+            ->withCount([
+                'products as active_products_count' => fn ($query) => $query->where('is_active', true),
+            ])
+            ->firstOrFail();
+
+        $products = Product::query()
+            ->select([
+                'id',
+                'category_id',
+                'sub_category_id',
+                'brand_id',
+                'event_id',
+                'name',
+                'slug',
+                'price',
+                'discount_price',
+                'stock',
+                'description',
+                'image_path',
+                'is_active',
+                'created_at',
+                'updated_at',
+            ])
+            ->where('category_id', $category->id)
+            ->where('sub_category_id', $subCategory->id)
+            ->where('is_active', true)
+            ->with([
+                'brand:id,name,image_path,is_active',
+                'event:id,name,discount_type,discount_value,is_active,starts_at,ends_at',
+                'images',
+                'colors:id,name,image_path,is_active',
+                'measurements:id,name,value,unit,is_active',
+            ])
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json([
+            'category' => $category,
+            'sub_category' => $subCategory,
+            'products' => $products,
+        ]);
+    }
+
+    public function publicShow(string $categorySlug, string $subCategorySlug, string $productSlug)
+    {
+        $product = Product::query()
+            ->where('slug', $productSlug)
+            ->where('is_active', true)
+            ->whereHas('category', fn ($query) => $query
+                ->where('slug', $categorySlug)
+                ->where('is_active', true)
+            )
+            ->whereHas('subCategory', fn ($query) => $query
+                ->where('slug', $subCategorySlug)
+                ->where('is_active', true)
+            )
+            ->with([
+                'category:id,name,slug,description,image_path',
+                'subCategory:id,name,slug,description,image_path,category_id',
+                'brand:id,name,image_path,is_active',
+                'event:id,name,discount_type,discount_value,is_active,starts_at,ends_at',
+                'images',
+                'colors:id,name,image_path,is_active',
+                'measurements:id,name,value,unit,is_active',
+            ])
+            ->firstOrFail();
+
+        return response()->json($product);
+    }
+
     public function index()
     {
         return response()->json(

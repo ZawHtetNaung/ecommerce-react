@@ -17,9 +17,33 @@ class CategoryController extends Controller
             Category::query()
                 ->select(['id', 'name', 'slug', 'image_path'])
                 ->where('is_active', true)
-                ->orderBy('name')
+                ->orderBy('id')
                 ->get()
         );
+    }
+
+    public function publicShow(string $slug)
+    {
+        $category = Category::query()
+            ->select(['id', 'name', 'slug', 'description', 'image_path'])
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->with([
+                'subCategories' => fn ($query) => $query
+                    ->select(['id', 'category_id', 'name', 'slug', 'description', 'image_path'])
+                    ->where('is_active', true)
+                    ->withCount([
+                        'products as active_products_count' => fn ($productQuery) => $productQuery->where('is_active', true),
+                    ])
+                    ->orderBy('id'),
+            ])
+            ->withCount([
+                'subCategories as active_sub_categories_count' => fn ($query) => $query->where('is_active', true),
+                'products as active_products_count' => fn ($query) => $query->where('is_active', true),
+            ])
+            ->firstOrFail();
+
+        return response()->json($category);
     }
 
     public function index()

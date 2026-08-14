@@ -7,7 +7,10 @@ use Illuminate\Support\Collection;
 
 final class CheckoutQuoteService
 {
-    public function __construct(private readonly ShippingQuoteCalculator $calculator) {}
+    public function __construct(
+        private readonly ShippingQuoteCalculator $shippingCalculator,
+        private readonly ProductTaxCalculator $taxCalculator,
+    ) {}
 
     /**
      * @param  Collection<int, array{product: Product|null, quantity: int}>  $lines
@@ -28,11 +31,16 @@ final class CheckoutQuoteService
             return null;
         }
 
-        $subtotalCents = (int) $availableLines->sum(function (array $line): int {
-            $unitPrice = $line['product']->effectiveUnitPrice();
-
-            return $this->moneyToCents($unitPrice) * $line['quantity'];
-        });
+        $priceLines = $availableLines->map(fn (array $line): array => $this->taxCalculator->line(
+            $line['product'],
+            (int) $line['quantity']
+        ));
+        $regularSubtotalCents = (int) $priceLines->sum('regular_subtotal_cents');
+        $subtotalCents = (int) $priceLines->sum('subtotal_cents');
+        $discountCents = (int) $priceLines->sum('discount_cents');
+        $taxAddedCents = (int) $priceLines->sum('tax_added_cents');
+        $taxIncludedCents = (int) $priceLines->sum('tax_included_cents');
+        $taxCents = $taxAddedCents + $taxIncludedCents;
 
         $requiresPaidShipping = $availableLines->contains(function (array $line): bool {
             $product = $line['product'];
@@ -41,7 +49,7 @@ final class CheckoutQuoteService
                 || $product->category?->slug === 'special-collection';
         });
 
-        $quote = $this->calculator->calculate(
+        $shippingQuote = $this->shippingCalculator->calculate(
             $subtotalCents,
             $zoneCode,
             $requiresPaidShipping
@@ -50,8 +58,8 @@ final class CheckoutQuoteService
 
         return [
             'can_checkout' => ! $hasUnavailableItems,
-            'currency' => $quote['currency'],
-            'zone' => $quote['zone'],
+            'currency' => $shippingQuote['currency'],
+            'zone' => $shippingQuote['zone'],
             'cart' => [
                 'available_line_count' => $availableLines->count(),
                 'available_item_count' => $availableLines->sum('quantity'),
@@ -59,40 +67,36 @@ final class CheckoutQuoteService
                 'has_unavailable_items' => $hasUnavailableItems,
                 'requires_paid_shipping' => $requiresPaidShipping,
             ],
-            'subtotal' => $this->formatMoney($subtotalCents),
+            'regular_subtotal' => $this->taxCalculator->formatMoney($regularSubtotalCents),
+            'discount' => $this->taxCalculator->formatMoney($discountCents),
+            'subtotal' => $this->taxCalculator->formatMoney($subtotalCents),
+            'tax' => [
+                'applies' => $priceLines->contains(fn (array $line): bool => $line['tax_status'] === 'taxable'),
+                'rate' => ProductTaxCalculator::VAT_RATE,
+                'amount' => $this->taxCalculator->formatMoney($taxCents),
+                'added_amount' => $this->taxCalculator->formatMoney($taxAddedCents),
+                'included_amount' => $this->taxCalculator->formatMoney($taxIncludedCents),
+            ],
             'shipping' => [
-                'label' => $quote['shipping']['label'],
-                'amount' => $this->formatMoney($quote['shipping']['fee_cents']),
-                'tax' => $this->formatMoney($quote['shipping']['tax_cents']),
-                'is_free' => $quote['shipping']['is_free'],
-                'paid_shipping_override' => $quote['shipping']['paid_shipping_override'],
-                'free_shipping_threshold_applies' => $quote['shipping']['free_shipping_threshold_applies'],
+                'label' => $shippingQuote['shipping']['label'],
+                'amount' => $this->taxCalculator->formatMoney($shippingQuote['shipping']['fee_cents']),
+                'tax' => $this->taxCalculator->formatMoney($shippingQuote['shipping']['tax_cents']),
+                'is_free' => $shippingQuote['shipping']['is_free'],
+                'paid_shipping_override' => $shippingQuote['shipping']['paid_shipping_override'],
+                'free_shipping_threshold_applies' => $shippingQuote['shipping']['free_shipping_threshold_applies'],
                 'free_shipping_threshold' => $this->formatNullableMoney(
-                    $quote['shipping']['free_shipping_threshold_cents']
+                    $shippingQuote['shipping']['free_shipping_threshold_cents']
                 ),
                 'amount_until_free_shipping' => $this->formatNullableMoney(
-                    $quote['shipping']['amount_until_free_shipping_cents']
+                    $shippingQuote['shipping']['amount_until_free_shipping_cents']
                 ),
             ],
-            'total' => $this->formatMoney($quote['total_cents']),
+            'total' => $this->taxCalculator->formatMoney($shippingQuote['total_cents'] + $taxAddedCents),
         ];
-    }
-
-    private function moneyToCents(mixed $amount): int
-    {
-        $normalized = number_format((float) $amount, 2, '.', '');
-        [$whole, $fraction] = explode('.', $normalized, 2);
-
-        return ((int) $whole * 100) + (int) $fraction;
-    }
-
-    private function formatMoney(int $amountCents): string
-    {
-        return number_format($amountCents / 100, 2, '.', '');
     }
 
     private function formatNullableMoney(?int $amountCents): ?string
     {
-        return $amountCents === null ? null : $this->formatMoney($amountCents);
+        return $amountCents === null ? null : $this->taxCalculator->formatMoney($amountCents);
     }
 }

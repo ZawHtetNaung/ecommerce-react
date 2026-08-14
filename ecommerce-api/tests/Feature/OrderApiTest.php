@@ -29,6 +29,7 @@ class OrderApiTest extends TestCase
             'address_line_1' => 'Villa 10',
             'address_line_2' => 'Street 4',
             'delivery_notes' => 'Call before delivery.',
+            'terms_accepted' => true,
         ]);
 
         $response
@@ -36,10 +37,18 @@ class OrderApiTest extends TestCase
             ->assertJsonPath('order.status', 'new')
             ->assertJsonPath('order.payment_status', 'unpaid')
             ->assertJsonPath('order.subtotal', '1000.00')
+            ->assertJsonPath('order.regular_subtotal', '1000.00')
+            ->assertJsonPath('order.discount_amount', '0.00')
+            ->assertJsonPath('order.tax_amount', '50.00')
+            ->assertJsonPath('order.tax_added_amount', '50.00')
+            ->assertJsonPath('order.tax_included_amount', '0.00')
             ->assertJsonPath('order.shipping_amount', '350.00')
-            ->assertJsonPath('order.total_amount', '1350.00')
+            ->assertJsonPath('order.total_amount', '1400.00')
             ->assertJsonPath('order.items.0.product_id', $product->id)
-            ->assertJsonPath('order.items.0.quantity', 1);
+            ->assertJsonPath('order.items.0.quantity', 1)
+            ->assertJsonPath('order.items.0.tax_amount', '50.00')
+            ->assertJsonPath('order.items.0.tax_is_included', false)
+            ->assertJsonPath('order.items.0.line_total', '1050.00');
 
         $this->assertDatabaseHas('orders', [
             'user_id' => $customer->id,
@@ -50,7 +59,8 @@ class OrderApiTest extends TestCase
         $this->assertDatabaseHas('order_items', [
             'product_id' => $product->id,
             'quantity' => 1,
-            'line_total' => 1000,
+            'tax_amount' => 50,
+            'line_total' => 1050,
         ]);
         $this->assertDatabaseMissing('cart_items', ['user_id' => $customer->id]);
     }
@@ -70,9 +80,28 @@ class OrderApiTest extends TestCase
                 'emirate_code' => 'DXB',
                 'city_area' => 'Dubai',
                 'address_line_1' => 'Address',
+                'terms_accepted' => true,
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('cart');
+    }
+
+    public function test_order_placement_requires_privacy_policy_acceptance(): void
+    {
+        [$customer] = $this->customerWithCart();
+
+        $this->actingAs($customer)
+            ->postJson('/api/checkout/orders', [
+                'customer_name' => 'Messara Customer',
+                'email' => 'customer@example.com',
+                'phone' => '+971501234567',
+                'emirate_code' => 'DXB',
+                'city_area' => 'Dubai',
+                'address_line_1' => 'Address',
+                'terms_accepted' => false,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('terms_accepted');
     }
 
     public function test_admin_can_manage_orders_and_notification_counts_follow_new_statuses(): void

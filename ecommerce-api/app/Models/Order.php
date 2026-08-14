@@ -24,6 +24,11 @@ class Order extends Model
         'payment_method',
         'staff_note',
         'subtotal',
+        'regular_subtotal',
+        'discount_amount',
+        'tax_amount',
+        'tax_added_amount',
+        'tax_included_amount',
         'shipping_amount',
         'shipping_tax',
         'total_amount',
@@ -34,6 +39,11 @@ class Order extends Model
     {
         return [
             'subtotal' => 'decimal:2',
+            'regular_subtotal' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
+            'tax_amount' => 'decimal:2',
+            'tax_added_amount' => 'decimal:2',
+            'tax_included_amount' => 'decimal:2',
             'shipping_amount' => 'decimal:2',
             'shipping_tax' => 'decimal:2',
             'total_amount' => 'decimal:2',

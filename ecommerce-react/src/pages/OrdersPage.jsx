@@ -138,12 +138,33 @@ export default function OrdersPage() {
             {(row.items || []).map((item) => (
               <p key={item.id}>
                 <strong>{item.product_name}</strong>
-                <span>Qty {item.quantity} · {money(item.line_total, row.currency)}</span>
+                <span>
+                  Qty {item.quantity} · {money(item.line_total, row.currency)}
+                  {Number(item.discount_amount || 0) > 0 && ` · Discount ${money(item.discount_amount, row.currency)}`}
+                  {Number(item.tax_amount || 0) > 0 && ` · VAT ${money(item.tax_amount, row.currency)}${item.tax_is_included ? ' included' : ''}`}
+                </span>
               </p>
             ))}
             <p>
+              <strong>Products subtotal</strong>
+              <span>{money(Number(row.regular_subtotal || 0) > 0 ? row.regular_subtotal : row.subtotal, row.currency)}</span>
+            </p>
+            {Number(row.discount_amount || 0) > 0 && (
+              <p><strong>Discount</strong><span>−{money(row.discount_amount, row.currency)}</span></p>
+            )}
+            {Number(row.tax_added_amount || 0) > 0 && (
+              <p><strong>VAT added (5%)</strong><span>{money(row.tax_added_amount, row.currency)}</span></p>
+            )}
+            {Number(row.tax_included_amount || 0) > 0 && (
+              <p><strong>VAT included (5%)</strong><span>{money(row.tax_included_amount, row.currency)}</span></p>
+            )}
+            <p>
               <strong>Delivery</strong>
               <span>{money(row.shipping_amount, row.currency)}</span>
+            </p>
+            <p>
+              <strong>Total</strong>
+              <span>{money(row.total_amount, row.currency)}</span>
             </p>
           </div>
         </details>

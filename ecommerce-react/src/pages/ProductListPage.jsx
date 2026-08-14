@@ -146,6 +146,16 @@ export default function ProductListPage() {
           </CBadge>
         ),
       },
+      {
+        name: 'Tax',
+        selector: (row) => row.tax_status === 'none' ? 'No tax' : row.tax_class,
+        cell: (row) => {
+          if (row.tax_status === 'none') return <CBadge color="secondary">No tax</CBadge>;
+          return row.tax_class === 'zero_rate'
+            ? <CBadge color="info">5% included</CBadge>
+            : <CBadge color="warning">5% added</CBadge>;
+        },
+      },
       { name: 'Status', selector: (row) => (row.is_active ? 'Active' : 'Inactive'), sortable: true },
       {
         name: 'Actions',

@@ -412,6 +412,8 @@ class ProductController extends Controller
             'wallpaper.pattern_repeat' => ['nullable', 'numeric', 'min:0'], 'wallpaper.match_type' => ['nullable', Rule::in(['free', 'straight', 'drop', 'reverse'])],
             'price' => ['required', 'numeric', 'min:0'],
             'discount_price' => ['nullable', 'numeric', 'min:0'],
+            'tax_status' => ['nullable', Rule::in(['taxable', 'none'])],
+            'tax_class' => ['nullable', Rule::in(['standard', 'zero_rate'])],
             'stock' => ['nullable', 'integer', 'min:0'],
             'is_in_stock' => ['nullable', 'boolean'],
             'requires_paid_shipping' => ['nullable', 'boolean'],
@@ -447,6 +449,10 @@ class ProductController extends Controller
         $validated['selling_method'] = $validated['selling_method'] ?? 'per_item';
         $validated['dimension_unit'] = $validated['dimension_unit'] ?? 'cm';
         $validated['weight_unit'] = $validated['weight_unit'] ?? 'kg';
+        $validated['tax_status'] = $validated['tax_status'] ?? 'taxable';
+        $validated['tax_class'] = $validated['tax_status'] === 'none'
+            ? 'standard'
+            : ($validated['tax_class'] ?? 'standard');
         $this->normalizeStockState($validated);
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = $validated['is_active'] ?? true;
@@ -550,6 +556,8 @@ class ProductController extends Controller
             'wallpaper.pattern_repeat' => ['nullable', 'numeric', 'min:0'], 'wallpaper.match_type' => ['nullable', Rule::in(['free', 'straight', 'drop', 'reverse'])],
             'price' => ['required', 'numeric', 'min:0'],
             'discount_price' => ['nullable', 'numeric', 'min:0'],
+            'tax_status' => ['nullable', Rule::in(['taxable', 'none'])],
+            'tax_class' => ['nullable', Rule::in(['standard', 'zero_rate'])],
             'stock' => ['nullable', 'integer', 'min:0'],
             'is_in_stock' => ['nullable', 'boolean'],
             'requires_paid_shipping' => ['nullable', 'boolean'],
@@ -589,6 +597,10 @@ class ProductController extends Controller
         $validated['selling_method'] = $validated['selling_method'] ?? $product->selling_method ?? 'per_item';
         $validated['dimension_unit'] = $validated['dimension_unit'] ?? $product->dimension_unit ?? 'cm';
         $validated['weight_unit'] = $validated['weight_unit'] ?? $product->weight_unit ?? 'kg';
+        $validated['tax_status'] = $validated['tax_status'] ?? $product->tax_status ?? 'taxable';
+        $validated['tax_class'] = $validated['tax_status'] === 'none'
+            ? 'standard'
+            : ($validated['tax_class'] ?? $product->tax_class ?? 'standard');
         $this->normalizeStockState($validated, $product);
         $newSlug = Str::slug($validated['name']);
         if (
@@ -610,6 +622,8 @@ class ProductController extends Controller
             'dimension_unit' => $validated['dimension_unit'], 'weight_unit' => $validated['weight_unit'],
             'slug' => $newSlug,
             'price' => $validated['price'],
+            'tax_status' => $validated['tax_status'],
+            'tax_class' => $validated['tax_status'] === 'none' ? 'standard' : $validated['tax_class'],
             'stock' => $validated['stock'],
             'is_in_stock' => $validated['is_in_stock'],
             'requires_paid_shipping' => $validated['requires_paid_shipping'] ?? $product->requires_paid_shipping,

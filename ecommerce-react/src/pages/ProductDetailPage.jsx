@@ -120,6 +120,14 @@ export default function ProductDetailPage() {
                 <>AED {formatAmount(product.price)}</>
               )}
             </p>
+            <p className="mb-1">
+              <strong>Tax:</strong>{' '}
+              {product.tax_status === 'none'
+                ? 'No tax'
+                : product.tax_class === 'zero_rate'
+                  ? 'Taxable — 5% VAT included in price'
+                  : 'Taxable — standard 5% VAT added at checkout'}
+            </p>
             <p className="mb-1"><strong>Stock:</strong> {isProductInStock(product) ? `In stock (${getProductPurchaseLimit(product)})` : 'Out of stock'}</p>
             <p className="mb-2"><strong>Status:</strong> <CBadge color={product.is_active ? 'success' : 'secondary'}>{product.is_active ? 'Active' : 'Inactive'}</CBadge></p>
             <p className="mb-0"><strong>Description:</strong></p>

@@ -14,7 +14,13 @@ class OrderItem extends Model
         'product_sku',
         'product_image_path',
         'unit_price',
+        'regular_unit_price',
         'quantity',
+        'discount_amount',
+        'tax_status',
+        'tax_class',
+        'tax_amount',
+        'tax_is_included',
         'line_total',
     ];
 
@@ -22,7 +28,11 @@ class OrderItem extends Model
     {
         return [
             'unit_price' => 'decimal:2',
+            'regular_unit_price' => 'decimal:2',
             'quantity' => 'integer',
+            'discount_amount' => 'decimal:2',
+            'tax_amount' => 'decimal:2',
+            'tax_is_included' => 'boolean',
             'line_total' => 'decimal:2',
         ];
     }

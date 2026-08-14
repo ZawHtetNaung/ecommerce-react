@@ -142,6 +142,8 @@ class ImportWordPressCatalog extends Command
                             'sku' => $this->nullable($postMeta['_sku'] ?? null),
                             'price' => $regular,
                             'discount_price' => $sale !== null && $sale < $regular ? $sale : null,
+                            'tax_status' => ($postMeta['_tax_status'] ?? 'taxable') === 'taxable' ? 'taxable' : 'none',
+                            'tax_class' => ($postMeta['_tax_class'] ?? '') === 'zero-rate' ? 'zero_rate' : 'standard',
                             'stock' => $isInStock ? max(1, $stockQuantity) : 0,
                             'is_in_stock' => $isInStock,
                             'requires_paid_shipping' => count(array_intersect($productTerms, $specialCollectionTermIds)) > 0,

@@ -171,7 +171,11 @@ export default function PrivacyPolicyPage() {
               <div className="privacy-policy-price-note">
                 <span>VAT</span>
                 <strong>5%</strong>
-                <p>VAT is not included in the displayed price and will be added at checkout.</p>
+                <p>
+                  Standard taxable products receive 5% VAT at checkout. Products marked as
+                  VAT-inclusive keep their displayed price and show the embedded 5% VAT amount
+                  separately. Products marked as no tax do not show or receive VAT.
+                </p>
               </div>
             </section>
 

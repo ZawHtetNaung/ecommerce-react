@@ -4,7 +4,7 @@ import { fetchCheckoutQuote, placeCheckoutOrder } from '../api/client';
 import StorefrontHeader from '../components/StorefrontHeader';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
-import { isCartItemAvailable } from '../utils/productStock';
+import { getProductPurchaseLimit, isCartItemAvailable } from '../utils/productStock';
 import { formatCurrency as money } from '../utils/price';
 
 const UAE_AREAS = [
@@ -29,7 +29,7 @@ function requestMessage(error, fallback = 'Unable to calculate delivery right no
 
 export default function CheckoutPage() {
   const { user, isAuthenticated } = useAuth();
-  const { cart, loading, refreshStore } = useStore();
+  const { cart, loading, refreshStore, changeCartQuantity, removeFromCart } = useStore();
   const [form, setForm] = useState({
     full_name: '',
     email: '',
@@ -46,6 +46,8 @@ export default function CheckoutPage() {
   const [orderError, setOrderError] = useState('');
   const [placingOrder, setPlacingOrder] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [adjustingItemId, setAdjustingItemId] = useState(null);
 
   const items = cart.items || [];
   const hasUnavailableItems = items.some((item) => !isCartItemAvailable(item));
@@ -103,8 +105,33 @@ export default function CheckoutPage() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  async function adjustItemQuantity(item, change) {
+    if (adjustingItemId !== null) return;
+
+    const currentQuantity = Math.max(1, Number(item.quantity) || 1);
+    const nextQuantity = currentQuantity + change;
+    setAdjustingItemId(item.id);
+    setOrderError('');
+
+    try {
+      if (nextQuantity < 1) {
+        await removeFromCart(item.id);
+      } else {
+        await changeCartQuantity(item.id, nextQuantity);
+      }
+    } catch (error) {
+      setOrderError(requestMessage(error, 'Unable to update this item right now.'));
+    } finally {
+      setAdjustingItemId(null);
+    }
+  }
+
   async function submitOrder(event) {
     event.preventDefault();
+    if (!privacyAccepted) {
+      setOrderError('Please read and agree to the Privacy Policy before placing your order.');
+      return;
+    }
     if (!isAuthenticated || !quoteCanCheckout || placingOrder) return;
 
     setPlacingOrder(true);
@@ -120,6 +147,7 @@ export default function CheckoutPage() {
         address_line_1: form.address_line_1,
         address_line_2: form.address_line_2 || null,
         delivery_notes: form.notes || null,
+        terms_accepted: true,
       });
       setCompletedOrder(response.order);
       refreshStore().catch(() => {});
@@ -246,14 +274,46 @@ export default function CheckoutPage() {
               {items.map((item) => (
                 <article key={item.id}>
                   <div className="checkout-summary-image">{item.product.image_url ? <img src={item.product.image_url} alt="" /> : <span>{item.product.name?.charAt(0)}</span>}<strong>{item.quantity}</strong></div>
-                  <div><span>{item.product.brand?.name || item.product.category?.name || 'Messara Living'}</span><h3>{item.product.name}</h3></div>
+                  <div className="checkout-summary-product-copy">
+                    <span>{item.product.brand?.name || item.product.category?.name || 'Messara Living'}</span>
+                    <h3>{item.product.name}</h3>
+                    <div className="checkout-summary-quantity" aria-label={`Quantity for ${item.product.name}`}>
+                      <button
+                        type="button"
+                        onClick={() => adjustItemQuantity(item, -1)}
+                        disabled={adjustingItemId !== null}
+                        aria-label={Number(item.quantity) === 1 ? `Remove ${item.product.name}` : `Decrease ${item.product.name} quantity`}
+                        title={Number(item.quantity) === 1 ? 'Remove item' : 'Decrease quantity'}
+                      >−</button>
+                      <strong>{adjustingItemId === item.id ? '…' : item.quantity}</strong>
+                      <button
+                        type="button"
+                        onClick={() => adjustItemQuantity(item, 1)}
+                        disabled={adjustingItemId !== null || !isCartItemAvailable(item) || Number(item.quantity) >= getProductPurchaseLimit(item.product)}
+                        aria-label={`Increase ${item.product.name} quantity`}
+                        title="Increase quantity"
+                      >+</button>
+                    </div>
+                  </div>
                   <strong>{money(item.line_total)}</strong>
                 </article>
               ))}
             </div>
 
             <div className="checkout-totals">
-              <div><span>Subtotal</span><strong>{quote ? money(quote.subtotal) : '—'}</strong></div>
+              <div><span>Products subtotal</span><strong>{quote ? money(quote.regular_subtotal ?? quote.subtotal) : '—'}</strong></div>
+              {Number(quote?.discount || 0) > 0 && (
+                <div className="checkout-discount-row"><span>Discount</span><strong>−{money(quote.discount)}</strong></div>
+              )}
+              {Number(quote?.tax?.added_amount || 0) > 0 && (
+                <div><span>VAT (5%)</span><strong>{money(quote.tax.added_amount)}</strong></div>
+              )}
+              {Number(quote?.tax?.included_amount || 0) > 0 && (
+                <div className="checkout-included-tax-row">
+                  <span>VAT included (5%)</span>
+                  <strong>{money(quote.tax.included_amount)}</strong>
+                </div>
+              )}
               <div><span>Delivery</span><strong aria-live="polite" className={quote?.shipping?.is_free ? 'is-free' : ''}>{quoteLoading ? 'Calculating...' : !form.emirate_code ? 'Select area' : quote ? (quote.shipping.is_free ? 'Free' : money(shippingAmount)) : 'Unavailable'}</strong></div>
               <div className="checkout-total"><span>Total</span><strong>{quote ? money(quote.total) : '—'}</strong></div>
             </div>
@@ -262,13 +322,30 @@ export default function CheckoutPage() {
             {!quote?.shipping?.paid_shipping_override && Number(quote?.shipping?.amount_until_free_shipping) > 0 && <div className="checkout-delivery-note">Add {money(quote.shipping.amount_until_free_shipping)} more in merchandise for free delivery to this area.</div>}
             {quote?.shipping?.is_free && <div className="checkout-delivery-note success">Free delivery unlocked for this area.</div>}
 
+            <label className="checkout-privacy-agreement">
+              <input
+                type="checkbox"
+                form="checkout-order-form"
+                checked={privacyAccepted}
+                onChange={(event) => {
+                  setPrivacyAccepted(event.target.checked);
+                  if (event.target.checked) setOrderError('');
+                }}
+                required
+              />
+              <span>
+                I confirm that I have read and agree to the{' '}
+                <Link to="/privacy-policy-2/" target="_blank" rel="noreferrer">Privacy Policy and website terms</Link>.
+              </span>
+            </label>
+
             <button
               type="submit"
               form="checkout-order-form"
               className="store-primary-button"
-              disabled={placingOrder || quoteLoading || checkoutHasUnavailableItems || !isAuthenticated || !quoteCanCheckout}
+              disabled={placingOrder || quoteLoading || checkoutHasUnavailableItems || !isAuthenticated || !quoteCanCheckout || !privacyAccepted}
             >
-              {placingOrder ? 'Placing order...' : quoteLoading ? 'Calculating delivery...' : checkoutHasUnavailableItems ? 'Unavailable item in cart' : !isAuthenticated ? 'Log in before placing order' : quoteCanCheckout ? 'Place order' : form.emirate_code ? 'Delivery unavailable' : 'Select a delivery area'}
+              {placingOrder ? 'Placing order...' : quoteLoading ? 'Calculating delivery...' : checkoutHasUnavailableItems ? 'Unavailable item in cart' : !isAuthenticated ? 'Log in before placing order' : quoteCanCheckout && !privacyAccepted ? 'Agree before placing order' : quoteCanCheckout ? 'Place order' : form.emirate_code ? 'Delivery unavailable' : 'Select a delivery area'}
             </button>
             <small>{isAuthenticated ? 'Your order will be saved for the Messara Living team to confirm. Payment is arranged after confirmation.' : 'You can complete the address and see delivery pricing now. Log in or create an account before placing the order.'}</small>
           </aside>

@@ -242,6 +242,31 @@ class CheckoutQuoteApiTest extends TestCase
             ->assertJsonPath('message', 'Your cart has no available items to quote.');
     }
 
+    public function test_quote_separates_discount_added_vat_included_vat_and_delivery(): void
+    {
+        $user = User::factory()->create();
+        $standard = $this->addCartProduct($user, 1000, 'furniture', 1, 800, true);
+        $included = $this->addCartProduct($user, 105, 'outdoor', 1, null, true);
+        $noTax = $this->addCartProduct($user, 100, 'accessories', 1, null, true);
+        $standard->update(['tax_status' => 'taxable', 'tax_class' => 'standard']);
+        $included->update(['tax_status' => 'taxable', 'tax_class' => 'zero_rate']);
+        $noTax->update(['tax_status' => 'none', 'tax_class' => 'standard']);
+
+        $this->actingAs($user)
+            ->postJson('/api/checkout/quote', ['emirate_code' => 'DXB'])
+            ->assertOk()
+            ->assertJsonPath('regular_subtotal', '1205.00')
+            ->assertJsonPath('discount', '200.00')
+            ->assertJsonPath('subtotal', '1005.00')
+            ->assertJsonPath('tax.applies', true)
+            ->assertJsonPath('tax.rate', 5)
+            ->assertJsonPath('tax.added_amount', '40.00')
+            ->assertJsonPath('tax.included_amount', '5.00')
+            ->assertJsonPath('tax.amount', '45.00')
+            ->assertJsonPath('shipping.amount', '350.00')
+            ->assertJsonPath('total', '1395.00');
+    }
+
     /**
      * @return array{User, Product}
      */
@@ -297,6 +322,8 @@ class CheckoutQuoteApiTest extends TestCase
             'stock' => $isAvailable ? max(1, $quantity) : 0,
             'is_in_stock' => $isAvailable,
             'requires_paid_shipping' => $requiresPaidShipping,
+            'tax_status' => 'none',
+            'tax_class' => 'standard',
             'is_active' => true,
         ]);
 

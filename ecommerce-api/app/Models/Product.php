@@ -26,6 +26,8 @@ class Product extends Model
         'product_type', 'selling_method', 'physical_length', 'physical_width', 'physical_height', 'physical_weight', 'dimension_unit', 'weight_unit',
         'price',
         'discount_price',
+        'tax_status',
+        'tax_class',
         'stock',
         'is_in_stock',
         'requires_paid_shipping',

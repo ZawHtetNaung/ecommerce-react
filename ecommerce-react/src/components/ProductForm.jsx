@@ -46,6 +46,8 @@ const initialForm = {
   wallpaper: { roll_width: '', roll_length: '', coverage_per_roll: '', pattern_repeat: '', match_type: 'free' },
   price: '',
   discount_price: '',
+  tax_status: 'taxable',
+  tax_class: 'standard',
   is_in_stock: true,
   requires_paid_shipping: false,
   stock: '1',
@@ -167,6 +169,8 @@ export default function ProductForm({ productId = null }) {
             wallpaper: { ...initialForm.wallpaper, ...(product.wallpaper_detail || {}) },
             price: String(product.price),
             discount_price: product.discount_price ? String(product.discount_price) : '',
+            tax_status: product.tax_status || 'taxable',
+            tax_class: product.tax_class || 'standard',
             is_in_stock: productIsInStock,
             requires_paid_shipping: Boolean(product.requires_paid_shipping),
             stock: productIsInStock ? String(Math.max(1, Number(product.stock) || 1)) : '0',
@@ -255,6 +259,10 @@ export default function ProductForm({ productId = null }) {
         next.discount_price = '';
       }
 
+      if (name === 'tax_status' && value === 'none') {
+        next.tax_class = 'standard';
+      }
+
       if (name === 'category_id') {
         const firstSubCategory = subCategories.find((subCategory) => String(subCategory.category_id) === value);
         next.sub_category_id = firstSubCategory ? String(firstSubCategory.id) : '';
@@ -341,6 +349,8 @@ export default function ProductForm({ productId = null }) {
     if (form.product_type === 'flooring') Object.entries(form.flooring).forEach(([field, value]) => payload.append(`flooring[${field}]`, value ?? ''));
     if (form.product_type === 'wallpaper') Object.entries(form.wallpaper).forEach(([field, value]) => payload.append(`wallpaper[${field}]`, value ?? ''));
     payload.append('price', String(Number(form.price)));
+    payload.append('tax_status', form.tax_status);
+    payload.append('tax_class', form.tax_status === 'none' ? 'standard' : form.tax_class);
     if (form.event_id) {
       payload.append('event_id', String(Number(form.event_id)));
     }
@@ -482,10 +492,10 @@ export default function ProductForm({ productId = null }) {
             <CCol md={3} className="mb-3"><CFormSelect label="Weight Unit" name="weight_unit" value={form.weight_unit} onChange={onInputChange}><option value="g">g</option><option value="kg">kg</option></CFormSelect></CCol>
             {form.product_type === 'flooring' && <CCol xs={12} className="mb-3"><CCard><CCardHeader>Flooring Settings</CCardHeader><CCardBody><CRow>{[['piece_length','Piece Length (cm)'],['piece_width','Piece Width (cm)'],['thickness','Thickness (cm)'],['coverage_per_box','Coverage per Box (m²)'],['pieces_per_box','Pieces per Box'],['minimum_order','Minimum Order'],['waste_percentage','Waste %']].map(([field,label]) => <CCol md={4} className="mb-3" key={field}><CFormInput label={label} type="number" min="0" step={field === 'pieces_per_box' ? '1' : '0.001'} value={form.flooring[field] ?? ''} onChange={(event) => setForm((prev) => ({ ...prev, flooring: { ...prev.flooring, [field]: event.target.value } }))} /></CCol>)}</CRow></CCardBody></CCard></CCol>}
             {form.product_type === 'wallpaper' && <CCol xs={12} className="mb-3"><CCard><CCardHeader>Wallpaper Settings</CCardHeader><CCardBody><CRow>{[['roll_width','Roll Width (cm)'],['roll_length','Roll Length (cm)'],['coverage_per_roll','Coverage per Roll (m²)'],['pattern_repeat','Pattern Repeat (cm)']].map(([field,label]) => <CCol md={4} className="mb-3" key={field}><CFormInput label={label} type="number" min="0" step="0.001" value={form.wallpaper[field] ?? ''} onChange={(event) => setForm((prev) => ({ ...prev, wallpaper: { ...prev.wallpaper, [field]: event.target.value } }))} /></CCol>)}<CCol md={4}><CFormSelect label="Match Type" value={form.wallpaper.match_type || 'free'} onChange={(event) => setForm((prev) => ({ ...prev, wallpaper: { ...prev.wallpaper, match_type: event.target.value } }))}><option value="free">Free match</option><option value="straight">Straight match</option><option value="drop">Drop match</option><option value="reverse">Reverse hang</option></CFormSelect></CCol></CRow></CCardBody></CCard></CCol>}
-            <CCol md={6} className="mb-3">
+            <CCol md={3} className="mb-3">
               <CFormInput label="Price" name="price" type="number" min="0" step="0.01" value={form.price} onChange={onInputChange} required />
             </CCol>
-            <CCol md={6} className="mb-3">
+            <CCol md={3} className="mb-3">
               <CFormInput
                 label="Discount Price (manual)"
                 name="discount_price"
@@ -497,6 +507,29 @@ export default function ProductForm({ productId = null }) {
                 disabled={Boolean(form.event_id)}
                 placeholder={form.event_id ? 'Disabled when event is selected' : ''}
               />
+            </CCol>
+            <CCol md={3} className="mb-3">
+              <CFormSelect label="Tax Status" name="tax_status" value={form.tax_status} onChange={onInputChange}>
+                <option value="taxable">Taxable</option>
+                <option value="none">No tax</option>
+              </CFormSelect>
+            </CCol>
+            <CCol md={3} className="mb-3">
+              <CFormSelect
+                label="Tax Class"
+                name="tax_class"
+                value={form.tax_class}
+                onChange={onInputChange}
+                disabled={form.tax_status === 'none'}
+                text={form.tax_status === 'none'
+                  ? 'VAT is not calculated or shown.'
+                  : form.tax_class === 'zero_rate'
+                    ? 'Entered price already includes 5% VAT.'
+                    : '5% VAT is added at checkout.'}
+              >
+                <option value="standard">Standard — add 5% VAT</option>
+                <option value="zero_rate">Zero rate — VAT included in price</option>
+              </CFormSelect>
             </CCol>
             <CCol md={3} className="mb-3">
               <label className="form-label d-block">Stock Availability</label>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Services\CheckoutQuoteService;
+use App\Services\ProductTaxCalculator;
 use App\Services\ShippingQuoteCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,11 @@ class OrderController extends Controller
 
     private const PAYMENT_STATUSES = ['unpaid', 'pending', 'paid', 'refunded'];
 
-    public function store(Request $request, CheckoutQuoteService $quoteService)
+    public function store(
+        Request $request,
+        CheckoutQuoteService $quoteService,
+        ProductTaxCalculator $taxCalculator,
+    )
     {
         $this->normalizeZone($request);
         $validated = $request->validate([
@@ -31,8 +36,10 @@ class OrderController extends Controller
             'address_line_1' => ['required', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
             'delivery_notes' => ['nullable', 'string', 'max:3000'],
+            'terms_accepted' => ['required', 'accepted'],
         ], [
             'emirate_code.in' => 'Delivery is not available for this emirate code.',
+            'terms_accepted.accepted' => 'You must agree to the Privacy Policy and website terms before placing an order.',
         ]);
 
         $cartItems = $request->user()->cartItems()
@@ -60,7 +67,7 @@ class OrderController extends Controller
             ]);
         }
 
-        $order = DB::transaction(function () use ($request, $validated, $cartItems, $quote): Order {
+        $order = DB::transaction(function () use ($request, $validated, $cartItems, $quote, $taxCalculator): Order {
             $order = Order::create([
                 'reference' => $this->newReference(),
                 'user_id' => $request->user()->id,
@@ -76,15 +83,20 @@ class OrderController extends Controller
                 'payment_status' => 'unpaid',
                 'payment_method' => 'payment_on_confirmation',
                 'subtotal' => $quote['subtotal'],
+                'regular_subtotal' => $quote['regular_subtotal'],
+                'discount_amount' => $quote['discount'],
+                'tax_amount' => $quote['tax']['amount'],
+                'tax_added_amount' => $quote['tax']['added_amount'],
+                'tax_included_amount' => $quote['tax']['included_amount'],
                 'shipping_amount' => $quote['shipping']['amount'],
                 'shipping_tax' => $quote['shipping']['tax'],
                 'total_amount' => $quote['total'],
                 'currency' => $quote['currency'],
             ]);
 
-            $order->items()->createMany($cartItems->map(function (CartItem $cartItem): array {
+            $order->items()->createMany($cartItems->map(function (CartItem $cartItem) use ($taxCalculator): array {
                 $product = $cartItem->product;
-                $unitPrice = $product->effectiveUnitPrice();
+                $pricing = $taxCalculator->line($product, $cartItem->quantity);
 
                 return [
                     'product_id' => $product->id,
@@ -92,9 +104,15 @@ class OrderController extends Controller
                     'product_slug' => $product->slug,
                     'product_sku' => $product->sku,
                     'product_image_path' => $product->images->first()?->path ?: $product->image_path,
-                    'unit_price' => round($unitPrice, 2),
+                    'unit_price' => $taxCalculator->formatMoney($pricing['unit_price_cents']),
+                    'regular_unit_price' => $taxCalculator->formatMoney($pricing['regular_unit_price_cents']),
                     'quantity' => $cartItem->quantity,
-                    'line_total' => round($unitPrice * $cartItem->quantity, 2),
+                    'discount_amount' => $taxCalculator->formatMoney($pricing['discount_cents']),
+                    'tax_status' => $pricing['tax_status'],
+                    'tax_class' => $pricing['tax_class'],
+                    'tax_amount' => $taxCalculator->formatMoney($pricing['tax_cents']),
+                    'tax_is_included' => $pricing['tax_is_included'],
+                    'line_total' => $taxCalculator->formatMoney($pricing['payable_cents']),
                 ];
             })->all());
 

@@ -11,13 +11,9 @@ import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
 import { buildProductMeasurements } from '../utils/productMeasurements';
 import { getProductPurchaseLimit, isProductInStock } from '../utils/productStock';
+import { formatAmount } from '../utils/price';
 
 const FALLBACK_IMAGE = '/messaraliving-logo.png';
-
-function formatPrice(value) {
-  const numberValue = Number(value || 0);
-  return Number.isFinite(numberValue) ? numberValue.toFixed(2) : '0.00';
-}
 
 function humanize(value, fallback = 'Not specified') {
   if (!value) return fallback;
@@ -559,9 +555,9 @@ export default function PublicProductDetailPage() {
 
                 <div className="pdp-price-block">
                   <div className="pdp-price-line">
-                    {hasDiscount && <span className="pdp-old-price">AED {formatPrice(product.price)}</span>}
+                    {hasDiscount && <span className="pdp-old-price">AED {formatAmount(product.price)}</span>}
                     <strong className={hasDiscount ? 'is-discounted' : ''}>
-                      AED {formatPrice(product.discount_price || product.price)}
+                      AED {formatAmount(product.discount_price || product.price)}
                     </strong>
                   </div>
                   <small>Price includes VAT</small>
@@ -705,7 +701,6 @@ export default function PublicProductDetailPage() {
                 <div className="pdp-stock-line">
                   <span className={inStock ? 'is-available' : ''} />
                   <strong>{inStock ? 'In stock' : 'Out of stock'}</strong>
-                  {inStock && <small>{purchaseLimit} available</small>}
                 </div>
               </aside>
             </section>

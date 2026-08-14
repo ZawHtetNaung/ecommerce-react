@@ -9,6 +9,7 @@ import {
 } from '@coreui/react';
 import AppDataTable from '../components/AppDataTable';
 import { fetchOrders, updateOrder } from '../api/client';
+import { formatCurrency as money } from '../utils/price';
 
 const orderStatuses = [
   ['new', 'New'],
@@ -26,10 +27,6 @@ const paymentStatuses = [
   ['paid', 'Paid'],
   ['refunded', 'Refunded'],
 ];
-
-function money(value, currency = 'AED') {
-  return `${currency} ${Number(value || 0).toFixed(2)}`;
-}
 
 function formatDate(value) {
   if (!value) return '-';

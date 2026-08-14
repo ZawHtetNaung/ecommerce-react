@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom';
 import StorefrontHeader from '../components/StorefrontHeader';
 import { useStore } from '../context/StoreContext';
 import { getProductPurchaseLimit, isCartItemAvailable, isProductInStock } from '../utils/productStock';
-
-function money(value) { return `AED ${Number(value || 0).toFixed(2)}`; }
+import { formatCurrency as money } from '../utils/price';
 
 function availabilityLabel(item) {
   if (isCartItemAvailable(item)) return 'Quantity';

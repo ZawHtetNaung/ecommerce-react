@@ -36,7 +36,11 @@ class OrderController extends Controller
         ]);
 
         $cartItems = $request->user()->cartItems()
-            ->with(['product.category:id,slug', 'product.images'])
+            ->with([
+                'product.category:id,slug',
+                'product.event:id,name,discount_type,discount_value,is_active,starts_at,ends_at',
+                'product.images',
+            ])
             ->get();
         $lines = $cartItems->map(fn (CartItem $item): array => [
             'product' => $item->product,
@@ -80,7 +84,7 @@ class OrderController extends Controller
 
             $order->items()->createMany($cartItems->map(function (CartItem $cartItem): array {
                 $product = $cartItem->product;
-                $unitPrice = (float) ($product->discount_price ?: $product->price);
+                $unitPrice = $product->effectiveUnitPrice();
 
                 return [
                     'product_id' => $product->id,

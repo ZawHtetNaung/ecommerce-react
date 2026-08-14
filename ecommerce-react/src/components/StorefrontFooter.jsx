@@ -81,7 +81,9 @@ export default function StorefrontFooter() {
           <Link to="/services#contact">Contact us</Link>
           <Link to="/services#faqs">FAQs</Link>
           <Link to="/services#about">About us</Link>
-          <a href="https://www.messaraliving.com/privacy-policy-2/">Privacy policy</a>
+          <Link to="/projects">Projects</Link>
+          <Link to="/blog">Blog</Link>
+          <Link to="/privacy-policy-2/">Privacy policy</Link>
         </nav>
 
         <section className="storefront-footer-column storefront-footer-connect" aria-labelledby="footer-connect-title">

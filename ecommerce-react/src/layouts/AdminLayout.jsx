@@ -34,6 +34,7 @@ import {
 import CIcon from '@coreui/icons-react';
 import { fetchAdminNotifications } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { formatCurrency } from '../utils/price';
 
 const pageDetails = {
   '/dashboard/overview': ['Dashboard', 'Store performance at a glance'],
@@ -46,6 +47,8 @@ const pageDetails = {
   '/dashboard/measurements': ['Measurements', 'Reusable dimensions and selling units'],
   '/dashboard/events': ['Events', 'Homepage promotions and scheduled campaigns'],
   '/dashboard/banners': ['Banners', 'Storefront banners and responsive artwork'],
+  '/dashboard/projects': ['Projects', 'Case studies, project galleries, and project SEO'],
+  '/dashboard/blog': ['Blog', 'Articles, categories, publishing, and article SEO'],
   '/dashboard/size-options': ['Size options', 'Furniture, flooring, and wallpaper sizing'],
   '/dashboard/seo': ['SEO', 'Metadata, page indexing, and robots.txt'],
   '/dashboard/quotations': ['Quotations', 'Customer project and bulk-order requests'],
@@ -253,6 +256,8 @@ export default function AdminLayout() {
           <div className="admin-nav-label">Experience</div>
           <SidebarLink to="/dashboard/events" icon={cilCalendar} onNavigate={closeSidebarOnMobile}>Events</SidebarLink>
           <SidebarLink to="/dashboard/banners" icon={cilImage} onNavigate={closeSidebarOnMobile}>Banners</SidebarLink>
+          <SidebarLink to="/dashboard/projects" icon={cilImage} onNavigate={closeSidebarOnMobile}>Projects</SidebarLink>
+          <SidebarLink to="/dashboard/blog" icon={cilDescription} onNavigate={closeSidebarOnMobile}>Blog</SidebarLink>
           <SidebarLink to="/dashboard/seo" icon={cilSearch} onNavigate={closeSidebarOnMobile}>SEO</SidebarLink>
           <SidebarLink to="/dashboard/orders" icon={cilCart} onNavigate={closeSidebarOnMobile}>Orders</SidebarLink>
           <SidebarLink to="/dashboard/quotations" icon={cilDescription} onNavigate={closeSidebarOnMobile}>Quotations</SidebarLink>
@@ -355,7 +360,7 @@ export default function AdminLayout() {
                           <span>
                             <small>{item.type === 'order' ? 'New order' : 'New quotation'} · {notificationTime(item.created_at)}</small>
                             <strong>{item.reference}</strong>
-                            <span>{item.customer_name} · {item.currency || 'AED'} {Number(item.amount || 0).toFixed(2)}</span>
+                            <span>{item.customer_name} · {formatCurrency(item.amount, item.currency || 'AED')}</span>
                           </span>
                         </Link>
                       ))}

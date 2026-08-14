@@ -29,7 +29,7 @@ final class CheckoutQuoteService
         }
 
         $subtotalCents = (int) $availableLines->sum(function (array $line): int {
-            $unitPrice = $line['product']->discount_price ?: $line['product']->price;
+            $unitPrice = $line['product']->effectiveUnitPrice();
 
             return $this->moneyToCents($unitPrice) * $line['quantity'];
         });

@@ -5,13 +5,16 @@ import {
   fetchPublicBanners,
   fetchPublicBrands,
   fetchPublicCategories,
-  fetchPublicEvents,
+  fetchPublicOffers,
+  fetchPublicProjects,
   fetchPublicProducts,
   fetchPublicSubCategories,
 } from '../api/client';
 import GoogleReviewsSection from '../components/GoogleReviewsSection';
+import OfferCountdown from '../components/OfferCountdown';
 import StorefrontHeader from '../components/StorefrontHeader';
 import { isProductInStock } from '../utils/productStock';
+import { formatCurrency } from '../utils/price';
 
 const rooms = [
   {
@@ -128,14 +131,15 @@ function resolveAssetUrl(apiBaseUrl, imageUrl, imagePath) {
   return '';
 }
 
-function formatCurrency(value) {
-  return `AED ${Number(value || 0).toFixed(2)}`;
+function savingPercentage(product) {
+  const price = Number(product?.price || 0);
+  const offerPrice = Number(product?.discount_price || 0);
+  if (price <= 0 || offerPrice <= 0 || offerPrice >= price) return 0;
+  return Math.max(1, Math.round(((price - offerPrice) / price) * 100));
 }
 
-function formatEventBadge(eventItem) {
-  const value = Number(eventItem?.discount_value || 0);
-  if (!value) return 'Featured drop';
-  return eventItem?.discount_type === 'percent' ? `${value}% off` : `AED ${value.toFixed(0)} off`;
+function formatEventBadge() {
+  return 'Considered pieces, now available at a more inviting price.';
 }
 
 function isRouteLink(link) {
@@ -171,11 +175,13 @@ function getBannerButtonStyle(banner) {
 
 export default function HomePage() {
   const [categories, setCategories] = useState([]);
-  const [events, setEvents] = useState([]);
+  const [offers, setOffers] = useState([]);
+  const [offerEvents, setOfferEvents] = useState([]);
   const [banners, setBanners] = useState([]);
   const [brands, setBrands] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [homeProjects, setHomeProjects] = useState([]);
   const [productSort, setProductSort] = useState('newest');
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [productLoadError, setProductLoadError] = useState('');
@@ -185,35 +191,40 @@ export default function HomePage() {
   const brandSliderPausedRef = useRef(false);
   const subCategoryTrackRef = useRef(null);
   const subCategorySliderPausedRef = useRef(false);
-  const eventTrackRefs = useRef({});
+  const offerTrackRef = useRef(null);
   const productTrackRef = useRef(null);
   const apiBaseUrl = API_BASE_URL;
 
   useEffect(() => {
     async function loadHomeData() {
       try {
-        const [categoriesData, eventsData, bannersData, brandsData, subCategoriesData, productsData] = await Promise.all([
+        const [categoriesData, offersData, bannersData, brandsData, subCategoriesData, productsData, projectsData] = await Promise.all([
           fetchPublicCategories(),
-          fetchPublicEvents(),
+          fetchPublicOffers(1, 8),
           fetchPublicBanners(),
           fetchPublicBrands(),
           fetchPublicSubCategories(),
           fetchPublicProducts(1, homeProductPageSize, { sort: 'newest', offset: 0 }),
+          fetchPublicProjects(1, 3, { featured: true }).catch(() => ({ data: [] })),
         ]);
 
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-        setEvents(Array.isArray(eventsData) ? eventsData : []);
+        setOffers(Array.isArray(offersData?.data) ? offersData.data : []);
+        setOfferEvents(Array.isArray(offersData?.events) ? offersData.events : []);
         setBanners(Array.isArray(bannersData) ? bannersData : []);
         setBrands(Array.isArray(brandsData) ? brandsData : []);
         setSubCategories(Array.isArray(subCategoriesData) ? subCategoriesData : []);
         setProducts(Array.isArray(productsData?.data) ? productsData.data.slice(0, homeProductPageSize) : []);
+        setHomeProjects(Array.isArray(projectsData?.data) ? projectsData.data.slice(0, 3) : []);
       } catch {
         setCategories([]);
-        setEvents([]);
+        setOffers([]);
+        setOfferEvents([]);
         setBanners([]);
         setBrands([]);
         setSubCategories([]);
         setProducts([]);
+        setHomeProjects([]);
         setProductLoadError('Unable to load products. Please try again.');
       } finally {
         setLoadingProducts(false);
@@ -227,15 +238,18 @@ export default function HomePage() {
     return [...categories].sort((a, b) => (Number(a?.id) || 0) - (Number(b?.id) || 0));
   }, [categories]);
 
-  const showcaseEvents = useMemo(() => {
-    return events.filter((eventItem) => Array.isArray(eventItem?.products) && eventItem.products.length > 0);
-  }, [events]);
-
   const displayBrands = useMemo(() => {
     return [...brands]
       .filter((brand) => brand?.is_active ?? true)
       .sort((a, b) => (Number(a?.id) || 0) - (Number(b?.id) || 0));
   }, [brands]);
+
+  const showcaseEvents = useMemo(() => offers.length > 0 ? [{
+    id: 'current-offers',
+    name: offerEvents[0]?.name || 'More style. Better prices.',
+    ends_at: offerEvents[0]?.ends_at || null,
+    products: offers,
+  }] : [], [offerEvents, offers]);
 
   const displaySubCategories = useMemo(() => {
     return [...subCategories]
@@ -304,10 +318,15 @@ export default function HomePage() {
   };
   const bannerLink = activeBanner?.button_link?.trim() || '#products';
 
-  function scrollEventProducts(eventId, direction) {
-    const ref = eventTrackRefs.current[eventId];
-    if (!ref) return;
-    ref.scrollBy({ left: direction * 340, behavior: 'smooth' });
+  function scrollOffers(direction) {
+    const track = offerTrackRef.current;
+    const firstCard = track?.querySelector('.home-offer-card');
+    if (!track || !firstCard) return;
+
+    const trackStyle = window.getComputedStyle(track);
+    const gap = Number.parseFloat(trackStyle.columnGap || trackStyle.gap || '0');
+    const step = firstCard.getBoundingClientRect().width + gap;
+    track.scrollBy({ left: direction * step * 2, behavior: 'smooth' });
   }
 
   function scrollCategories(direction) {
@@ -638,32 +657,34 @@ export default function HomePage() {
             <div key={eventItem.id} className="event-block">
               <div className="event-header">
                 <div>
-                  <span className="section-kicker">Event picks</span>
+                  <span className="section-kicker">Only for a while</span>
                   <h2>{eventItem.name}</h2>
                   <p className="event-subtitle">{formatEventBadge(eventItem)}</p>
+                  <OfferCountdown
+                    endsAt={eventItem.ends_at}
+                    label="Event ends in"
+                    className="offer-countdown-dark"
+                  />
                 </div>
                 <div className="event-controls">
-                  <button type="button" onClick={() => scrollEventProducts(eventItem.id, -1)} aria-label="Scroll left">
+                  <Link to="/offers" className="event-shop-all">Shop all offers</Link>
+                  <button type="button" onClick={() => scrollOffers(-1)} aria-label="Scroll left">
                     ‹
                   </button>
-                  <button type="button" onClick={() => scrollEventProducts(eventItem.id, 1)} aria-label="Scroll right">
+                  <button type="button" onClick={() => scrollOffers(1)} aria-label="Scroll right">
                     ›
                   </button>
                 </div>
               </div>
               <div
                 className="event-track"
-                ref={(node) => {
-                  if (node) {
-                    eventTrackRefs.current[eventItem.id] = node;
-                  }
-                }}
+                ref={offerTrackRef}
               >
                 {(eventItem.products || []).map((product) => {
                   const productImage = resolveAssetUrl(apiBaseUrl, product.image_url, product.image_path);
 
                   return (
-                    <article key={product.id} className="event-card">
+                    <Link key={product.id} to={`/product/${product.slug}`} className="event-card home-offer-card">
                       <div className="event-image">
                         {productImage ? (
                           <img src={productImage} alt={product.name} />
@@ -672,6 +693,7 @@ export default function HomePage() {
                         )}
                       </div>
                       <div className="event-card-body">
+                        <span className="home-offer-saving">Save {savingPercentage(product)}%</span>
                         <h3>{product.name}</h3>
                         {Number(product.discount_price || 0) > 0 ? (
                           <div className="event-product-price">
@@ -682,12 +704,30 @@ export default function HomePage() {
                           <div className="event-product-price">{formatCurrency(product.price)}</div>
                         )}
                       </div>
-                    </article>
+                    </Link>
                   );
                 })}
               </div>
             </div>
           ))}
+        </section>
+      )}
+
+      {homeProjects.length > 0 && (
+        <section className="section home-projects-section">
+          <div className="section-head">
+            <div><span className="section-kicker">Selected projects</span><h2>Spaces brought together with purpose.</h2></div>
+            <Link to="/projects" className="home-projects-view-all">View all projects <span>→</span></Link>
+          </div>
+          <div className="home-projects-grid">
+            {homeProjects.map((project) => (
+              <Link to={`/projects/${project.slug}`} className="home-project-card" key={project.id}>
+                <div>{project.cover_image_url ? <img src={project.cover_image_url} alt={project.cover_image_alt || project.title} loading="lazy" /> : <span className="content-image-placeholder"><b>ML</b></span>}</div>
+                <span>{project.project_type}{project.location ? ` · ${project.location}` : ''}</span>
+                <h3>{project.title}</h3>
+              </Link>
+            ))}
+          </div>
         </section>
       )}
 

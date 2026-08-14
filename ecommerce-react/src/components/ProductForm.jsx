@@ -31,6 +31,7 @@ import {
 } from '../api/client';
 import { isStandardMeasurementName } from '../utils/productMeasurements';
 import { isProductInStock } from '../utils/productStock';
+import { formatAmount } from '../utils/price';
 
 const initialForm = {
   category_id: '',
@@ -61,11 +62,6 @@ const initialForm = {
   size_option_ids: [],
   is_active: true,
 };
-
-function formatPrice(value) {
-  const numberValue = Number(value || 0);
-  return Number.isFinite(numberValue) ? numberValue.toFixed(2) : '0.00';
-}
 
 function calculateEventDiscount(price, event) {
   if (!event) return null;
@@ -679,14 +675,14 @@ export default function ProductForm({ productId = null }) {
                 Event: <strong>{selectedEvent.name}</strong>{' '}
                 {eventHasDiscount && (
                   <>
-                    — Discount {selectedEvent.discount_type === 'percent' ? `${selectedEvent.discount_value}%` : `AED ${formatPrice(selectedEvent.discount_value)}`}
+                    — Discount {selectedEvent.discount_type === 'percent' ? `${selectedEvent.discount_value}%` : `AED ${formatAmount(selectedEvent.discount_value)}`}
                   </>
                 )}
                 {form.price && eventHasDiscount && (
                   <>
-                    {' '}| Price: <span className="price-old">AED {formatPrice(form.price)}</span>{' '}
+                    {' '}| Price: <span className="price-old">AED {formatAmount(form.price)}</span>{' '}
                     <span className="price-discount">
-                      AED {formatPrice(calculateEventDiscount(Number(form.price), selectedEvent))}
+                      AED {formatAmount(calculateEventDiscount(Number(form.price), selectedEvent))}
                     </span>
                   </>
                 )}

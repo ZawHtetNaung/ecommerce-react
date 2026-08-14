@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Brand;
+use App\Models\Event;
 use App\Models\Measurement;
 use App\Models\Product;
 use App\Models\ProductImage;
@@ -91,9 +92,7 @@ class ProductController extends Controller
                 ->orderByDesc('cart_count')
                 ->orderByDesc('id'),
             'discount' => $products
-                ->whereNotNull('discount_price')
-                ->where('discount_price', '>', 0)
-                ->whereColumn('discount_price', '<', 'price')
+                ->withCurrentOffer()
                 ->orderByRaw('(price - discount_price) / NULLIF(price, 0) desc')
                 ->orderByDesc('id'),
             'price_asc' => $products->orderByRaw('COALESCE(NULLIF(discount_price, 0), price) asc'),
@@ -120,6 +119,116 @@ class ProductController extends Controller
         }
 
         return response()->json($products->paginate($perPage)->withQueryString());
+    }
+
+    public function publicOffers(Request $request)
+    {
+        $perPage = min(max($request->integer('per_page', 12), 4), 24);
+        $search = trim((string) $request->query('q', ''));
+        $sort = (string) $request->query('sort', 'saving_desc');
+
+        $products = $this->publicOfferQuery()
+            ->when($search !== '', function ($query) use ($search): void {
+                $like = '%'.$search.'%';
+                $query->where(function ($searchQuery) use ($like): void {
+                    $searchQuery
+                        ->where('name', 'like', $like)
+                        ->orWhere('sku', 'like', $like)
+                        ->orWhereHas('brand', fn ($brandQuery) => $brandQuery->where('name', 'like', $like));
+                });
+            })
+            ->when($request->filled('category_id'), fn ($query) => $query->where('category_id', $request->integer('category_id')))
+            ->when($request->filled('brand_id'), fn ($query) => $query->where('brand_id', $request->integer('brand_id')))
+            ->when($request->filled('event_id'), fn ($query) => $query->where('event_id', $request->integer('event_id')));
+
+        match ($sort) {
+            'newest' => $products->orderByDesc('id'),
+            'price_asc' => $products->orderBy('discount_price')->orderByDesc('id'),
+            'price_desc' => $products->orderByDesc('discount_price')->orderByDesc('id'),
+            default => $products
+                ->orderByRaw('(price - discount_price) / NULLIF(price, 0) desc')
+                ->orderByDesc('id'),
+        };
+
+        $paginator = $products->paginate($perPage)->withQueryString();
+        $activeEvents = Event::query()
+            ->currentlyActive()
+            ->whereHas('products', function ($query): void {
+                $query
+                    ->where('is_active', true)
+                    ->where('is_in_stock', true)
+                    ->where('stock', '>', 0)
+                    ->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('is_active', true))
+                    ->whereHas('subCategory', fn ($subCategoryQuery) => $subCategoryQuery->where('is_active', true))
+                    ->withCurrentOffer();
+            })
+            ->withCount(['products as offers_count' => function ($query): void {
+                $query
+                    ->where('is_active', true)
+                    ->where('is_in_stock', true)
+                    ->where('stock', '>', 0)
+                    ->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('is_active', true))
+                    ->whereHas('subCategory', fn ($subCategoryQuery) => $subCategoryQuery->where('is_active', true))
+                    ->withCurrentOffer();
+            }])
+            ->orderByRaw('ends_at is null, ends_at asc')
+            ->get(['id', 'name', 'discount_type', 'discount_value', 'starts_at', 'ends_at']);
+
+        return response()->json([
+            'data' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+            'events' => $activeEvents,
+        ]);
+    }
+
+    public function publicOffersSummary()
+    {
+        $count = $this->publicOfferQuery()->count();
+
+        return response()->json([
+            'has_offers' => $count > 0,
+            'count' => $count,
+        ]);
+    }
+
+    private function publicOfferQuery()
+    {
+        return Product::query()
+            ->select([
+                'id',
+                'category_id',
+                'sub_category_id',
+                'brand_id',
+                'event_id',
+                'name',
+                'slug',
+                'sku',
+                'price',
+                'discount_price',
+                'stock',
+                'is_in_stock',
+                'image_path',
+                'is_active',
+                'created_at',
+            ])
+            ->where('is_active', true)
+            ->where('is_in_stock', true)
+            ->where('stock', '>', 0)
+            ->whereHas('category', fn ($query) => $query->where('is_active', true))
+            ->whereHas('subCategory', fn ($query) => $query->where('is_active', true))
+            ->withCurrentOffer()
+            ->with([
+                'category:id,name,slug',
+                'subCategory:id,category_id,name,slug',
+                'brand:id,name,image_path,image_alt_text,is_active',
+                'event:id,name,discount_type,discount_value,is_active,starts_at,ends_at',
+                'images',
+            ]);
     }
 
     public function publicFilters()

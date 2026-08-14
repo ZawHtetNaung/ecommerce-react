@@ -4,6 +4,7 @@ import { submitQuotationRequest } from '../api/client';
 import StorefrontHeader from '../components/StorefrontHeader';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
+import { formatCurrency as money } from '../utils/price';
 
 const initialForm = {
   customer_name: '',
@@ -15,10 +16,6 @@ const initialForm = {
   required_by: '',
   message: '',
 };
-
-function money(value) {
-  return `AED ${Number(value || 0).toFixed(2)}`;
-}
 
 function requestErrorMessage(error) {
   const validationErrors = error.response?.data?.errors;

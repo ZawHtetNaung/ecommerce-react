@@ -15,7 +15,9 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import EventsPage from './pages/EventsPage';
 import FavouritesPage from './pages/FavouritesPage';
-import NewsPage from './pages/NewsPage';
+import BlogPage from './pages/BlogPage';
+import BlogDetailPage from './pages/BlogDetailPage';
+import BlogAdminPage from './pages/BlogAdminPage';
 import OrdersPage from './pages/OrdersPage';
 import ProductCreatePage from './pages/ProductCreatePage';
 import ProductDetailPage from './pages/ProductDetailPage';
@@ -40,6 +42,11 @@ import AiKnowledgePage from './pages/AiKnowledgePage';
 import AdminAccountsPage from './pages/AdminAccountsPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminRegisterPage from './pages/AdminRegisterPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import OffersPage from './pages/OffersPage';
+import ProjectsPage from './pages/ProjectsPage';
+import ProjectDetailPage from './pages/ProjectDetailPage';
+import ProjectsAdminPage from './pages/ProjectsAdminPage';
 
 export default function App() {
   return (
@@ -61,11 +68,18 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/search" element={<SearchResultsPage />} />
         <Route path="/services" element={<ServicesPage />} />
-        <Route path="/news" element={<NewsPage />} />
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/projects/:projectSlug" element={<ProjectDetailPage />} />
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:postSlug" element={<BlogDetailPage />} />
+        <Route path="/news" element={<Navigate to="/blog?category=news" replace />} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/quotation" element={<QuotationPage />} />
+        <Route path="/offers" element={<OffersPage />} />
+        <Route path="/privacy-policy-2/" element={<PrivacyPolicyPage />} />
+        <Route path="/privacy-policy" element={<Navigate to="/privacy-policy-2/" replace />} />
         <Route path="/favourites" element={<ProtectedRoute><FavouritesPage /></ProtectedRoute>} />
       </Route>
 
@@ -95,6 +109,8 @@ export default function App() {
         <Route path="size-options" element={<SizeOptionsPage />} />
         <Route path="events" element={<EventsPage />} />
         <Route path="banners" element={<BannersPage />} />
+        <Route path="projects" element={<ProjectsAdminPage />} />
+        <Route path="blog" element={<BlogAdminPage />} />
         <Route path="seo" element={<SeoPage />} />
         <Route path="quotations" element={<QuotationRequestsPage />} />
         <Route path="orders" element={<OrdersPage />} />

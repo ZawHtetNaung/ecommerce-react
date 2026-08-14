@@ -21,10 +21,7 @@ import CategoryMenu from './CategoryMenu';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
 import { buildWhatsAppUrl } from './WhatsAppLiveChat';
-
-function formatPrice(value) {
-  return `AED ${Number(value || 0).toFixed(2)}`;
-}
+import { formatCurrency } from '../utils/price';
 
 export default function StorefrontHeader() {
   const navigate = useNavigate();
@@ -182,8 +179,8 @@ export default function StorefrontHeader() {
                       <span>{product.brand?.name || product.category?.name || 'MessaraLiving'}</span>
                     </div>
                     <div className="search-suggestion-price">
-                      {Number(product.discount_price || 0) > 0 && <small>{formatPrice(product.price)}</small>}
-                      <strong>{formatPrice(product.discount_price || product.price)}</strong>
+                      {Number(product.discount_price || 0) > 0 && <small>{formatCurrency(product.price)}</small>}
+                      <strong>{formatCurrency(product.discount_price || product.price)}</strong>
                     </div>
                   </Link>
                 ))}
@@ -197,7 +194,8 @@ export default function StorefrontHeader() {
 
         <nav className="home-links" aria-label="Store links">
           <Link to="/services">Services</Link>
-          <Link to="/news">News</Link>
+          <Link to="/projects">Projects</Link>
+          <Link to="/blog">Blog</Link>
         </nav>
 
         <div className="home-auth">

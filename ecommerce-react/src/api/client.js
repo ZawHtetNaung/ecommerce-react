@@ -262,6 +262,20 @@ export async function clearCart() {
   return data;
 }
 
+export async function fetchPublicOffers(page = 1, perPage = 12, filters = {}) {
+  const { data } = await api.get('/api/public/offers', {
+    params: { page, per_page: perPage, ...filters },
+  });
+  return data;
+}
+
+export async function fetchPublicOffersSummary() {
+  const { data } = await shareInFlightRequest('public-offers-summary', () => (
+    api.get('/api/public/offers/summary', { globalLoading: false })
+  ));
+  return data;
+}
+
 export async function fetchAdminAccounts() {
   const { data } = await api.get('/api/admin-accounts');
   return data;
@@ -619,6 +633,126 @@ export async function updateProduct(productId, payload) {
 
 export async function deleteProduct(productId) {
   const { data } = await api.delete(`/api/products/${productId}`);
+  return data;
+}
+
+export async function fetchPublicProjects(page = 1, perPage = 12, filters = {}) {
+  const { data } = await api.get('/api/public/projects', {
+    params: { page, per_page: perPage, ...filters },
+  });
+  return data;
+}
+
+export async function fetchPublicProject(slug) {
+  const { data } = await api.get(`/api/public/projects/${slug}`);
+  return data;
+}
+
+export async function fetchProjects() {
+  const { data } = await api.get('/api/projects');
+  return data;
+}
+
+export async function fetchProject(projectId) {
+  const { data } = await api.get(`/api/projects/${projectId}`);
+  return data;
+}
+
+export async function createProject(payload) {
+  const config = payload instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+  const { data } = await api.post('/api/projects', payload, config);
+  return data;
+}
+
+export async function updateProject(projectId, payload) {
+  if (payload instanceof FormData) {
+    payload.append('_method', 'PUT');
+    const { data } = await api.post(`/api/projects/${projectId}`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  }
+  const { data } = await api.put(`/api/projects/${projectId}`, payload);
+  return data;
+}
+
+export async function deleteProject(projectId) {
+  const { data } = await api.delete(`/api/projects/${projectId}`);
+  return data;
+}
+
+export async function deleteProjectImage(projectId, imageId) {
+  const { data } = await api.delete(`/api/projects/${projectId}/images/${imageId}`);
+  return data;
+}
+
+export async function fetchPublicBlogCategories() {
+  const { data } = await api.get('/api/public/blog-categories');
+  return data;
+}
+
+export async function fetchPublicBlogPosts(page = 1, perPage = 12, filters = {}) {
+  const { data } = await api.get('/api/public/blog-posts', {
+    params: { page, per_page: perPage, ...filters },
+  });
+  return data;
+}
+
+export async function fetchPublicBlogPost(slug) {
+  const { data } = await api.get(`/api/public/blog-posts/${slug}`);
+  return data;
+}
+
+export async function fetchBlogCategories() {
+  const { data } = await api.get('/api/blog-categories');
+  return data;
+}
+
+export async function createBlogCategory(payload) {
+  const { data } = await api.post('/api/blog-categories', payload);
+  return data;
+}
+
+export async function updateBlogCategory(categoryId, payload) {
+  const { data } = await api.put(`/api/blog-categories/${categoryId}`, payload);
+  return data;
+}
+
+export async function deleteBlogCategory(categoryId) {
+  const { data } = await api.delete(`/api/blog-categories/${categoryId}`);
+  return data;
+}
+
+export async function fetchBlogPosts() {
+  const { data } = await api.get('/api/blog-posts');
+  return data;
+}
+
+export async function fetchBlogPost(postId) {
+  const { data } = await api.get(`/api/blog-posts/${postId}`);
+  return data;
+}
+
+export async function createBlogPost(payload) {
+  const config = payload instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+  const { data } = await api.post('/api/blog-posts', payload, config);
+  return data;
+}
+
+export async function updateBlogPost(postId, payload) {
+  if (payload instanceof FormData) {
+    payload.append('_method', 'PUT');
+    const { data } = await api.post(`/api/blog-posts/${postId}`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  }
+  const { data } = await api.put(`/api/blog-posts/${postId}`, payload);
+  return data;
+}
+
+export async function deleteBlogPost(postId) {
+  const { data } = await api.delete(`/api/blog-posts/${postId}`);
   return data;
 }
 

@@ -91,7 +91,7 @@ export default function RegisterPage() {
 
             <label className={`auth-consent ${fieldErrors.terms_accepted ? 'has-error' : ''}`}>
               <input type="checkbox" name="terms_accepted" checked={form.terms_accepted} onChange={updateField} />
-              <span>I agree to the <a href="https://www.messaraliving.com/privacy-policy-2/" target="_blank" rel="noreferrer">privacy policy</a> and account terms.</span>
+              <span>I agree to the <Link to="/privacy-policy-2/" target="_blank">privacy policy</Link> and account terms.</span>
             </label>
             {fieldErrors.terms_accepted && <small className="auth-consent-error">{fieldErrors.terms_accepted}</small>}
 

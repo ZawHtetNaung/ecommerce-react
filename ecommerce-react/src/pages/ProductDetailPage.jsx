@@ -3,11 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { CAlert, CBadge, CButton, CCard, CCardBody, CCardHeader, CSpinner } from '@coreui/react';
 import { fetchProduct } from '../api/client';
 import { getProductPurchaseLimit, isProductInStock } from '../utils/productStock';
-
-function formatPrice(value) {
-  const numberValue = Number(value || 0);
-  return Number.isFinite(numberValue) ? numberValue.toFixed(2) : '0.00';
-}
+import { formatAmount } from '../utils/price';
 
 export default function ProductDetailPage() {
   const { productId } = useParams();
@@ -117,11 +113,11 @@ export default function ProductDetailPage() {
               <strong>Price:</strong>{' '}
               {Number(product.discount_price || 0) > 0 ? (
                 <>
-                  <span className="price-old">AED {formatPrice(product.price)}</span>{' '}
-                  <span className="price-discount">AED {formatPrice(product.discount_price)}</span>
+                  <span className="price-old">AED {formatAmount(product.price)}</span>{' '}
+                  <span className="price-discount">AED {formatAmount(product.discount_price)}</span>
                 </>
               ) : (
-                <>AED {formatPrice(product.price)}</>
+                <>AED {formatAmount(product.price)}</>
               )}
             </p>
             <p className="mb-1"><strong>Stock:</strong> {isProductInStock(product) ? `In stock (${getProductPurchaseLimit(product)})` : 'Out of stock'}</p>

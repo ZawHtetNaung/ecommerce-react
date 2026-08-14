@@ -24,6 +24,7 @@ import {
   fetchProducts,
   updateEvent,
 } from '../api/client';
+import { formatAmount } from '../utils/price';
 
 const initialForm = {
   name: '',
@@ -34,11 +35,6 @@ const initialForm = {
   is_active: true,
   product_ids: [],
 };
-
-function formatPrice(value) {
-  const numberValue = Number(value || 0);
-  return Number.isFinite(numberValue) ? numberValue.toFixed(2) : '0.00';
-}
 
 function getDiscountedPrice(price, discountType, discountValue) {
   const base = Number(price || 0);
@@ -208,11 +204,11 @@ export default function EventsPage() {
                       <span className="event-product-name">{product.name}</span>
                       {hasDiscount ? (
                         <span className="event-product-price">
-                          <span className="price-old">AED {formatPrice(product.price)}</span>
-                          <span className="price-discount">AED {formatPrice(discounted)}</span>
+                          <span className="price-old">AED {formatAmount(product.price)}</span>
+                          <span className="price-discount">AED {formatAmount(discounted)}</span>
                         </span>
                       ) : (
-                        <span className="event-product-price">AED {formatPrice(product.price)}</span>
+                        <span className="event-product-price">AED {formatAmount(product.price)}</span>
                       )}
                     </div>
                   );
@@ -268,11 +264,11 @@ export default function EventsPage() {
             <div className="product-option-name">{data.label}</div>
             {hasDiscount ? (
               <div className="product-option-price">
-                <span className="price-old">AED {formatPrice(data.price)}</span>
-                <span className="price-discount">AED {formatPrice(discounted)}</span>
+                <span className="price-old">AED {formatAmount(data.price)}</span>
+                <span className="price-discount">AED {formatAmount(discounted)}</span>
               </div>
             ) : (
-              <div className="product-option-price">AED {formatPrice(data.price)}</div>
+              <div className="product-option-price">AED {formatAmount(data.price)}</div>
             )}
           </div>
         </div>

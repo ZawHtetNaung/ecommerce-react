@@ -157,6 +157,11 @@ export default function CategoryMenu() {
                 </li>
               );
             })}
+            <li className={`global-category-offers-item ${location.pathname === '/offers' ? 'is-active' : ''}`}>
+              <Link to="/offers" aria-current={location.pathname === '/offers' ? 'page' : undefined}>
+                Offers
+              </Link>
+            </li>
           </ul>
         </div>
 
@@ -201,22 +206,36 @@ export default function CategoryMenu() {
         )}
 
         <div className="global-category-menu-mobile">
-          <button
-            type="button"
-            className="global-category-mobile-toggle"
-            onClick={() => setMobileOpen((current) => !current)}
-            aria-expanded={mobileOpen}
-            aria-controls="global-category-mobile-panel"
-          >
-            <span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-              Shop categories
-            </span>
-            <svg className={mobileOpen ? 'is-open' : ''} viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4" /></svg>
-          </button>
+          <div className="global-category-mobile-row">
+            <button
+              type="button"
+              className="global-category-mobile-toggle"
+              onClick={() => setMobileOpen((current) => !current)}
+              aria-expanded={mobileOpen}
+              aria-controls="global-category-mobile-panel"
+            >
+              <span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+                Shop categories
+              </span>
+              <svg className={mobileOpen ? 'is-open' : ''} viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4" /></svg>
+            </button>
+            <Link
+              className={`global-category-mobile-offers ${location.pathname === '/offers' ? 'is-active' : ''}`}
+              to="/offers"
+              aria-current={location.pathname === '/offers' ? 'page' : undefined}
+            >
+              Offers
+            </Link>
+          </div>
 
           {mobileOpen && (
             <div className="global-category-mobile-panel" id="global-category-mobile-panel">
+              <nav className="global-category-mobile-content-links" aria-label="Explore Messara Living">
+                <Link to="/services">Services</Link>
+                <Link to="/projects">Projects</Link>
+                <Link to="/blog">Blog</Link>
+              </nav>
               <Link className="global-category-mobile-all" to="/search">Browse all products <span>→</span></Link>
               {categories.map((category) => {
                 const categorySubCategories = subCategoriesByCategory.get(Number(category.id)) || [];

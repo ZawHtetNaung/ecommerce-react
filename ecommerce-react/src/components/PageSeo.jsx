@@ -16,6 +16,30 @@ export default function PageSeo() {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    if (pathname === '/projects' || pathname === '/projects/') {
+      document.title = 'Interior Projects | Messara Living';
+      setMeta('description', 'Explore Messara Living residential, commercial, hospitality, and office projects across the UAE.');
+      setMeta('robots', 'index, follow');
+    }
+
+    if (pathname === '/blog' || pathname === '/blog/') {
+      document.title = 'Interior Design Blog | Messara Living';
+      setMeta('description', 'Read Messara Living buying guides, interior inspiration, material advice, company news, and new collection stories.');
+      setMeta('robots', 'index, follow');
+    }
+
+    if (pathname === '/offers' || pathname === '/offers/') {
+      document.title = 'Offers | Messara Living';
+      setMeta('description', 'Shop current Messara Living offers across furniture, flooring, wallpaper, and home accessories in the UAE.');
+      setMeta('robots', 'index, follow');
+    }
+
+    if (pathname === '/privacy-policy-2/' || pathname === '/privacy-policy-2') {
+      document.title = 'Privacy Policy | Messara Living';
+      setMeta('description', 'Read the Messara Living privacy policy, website terms, order, delivery, returns, refund, and installation information for the UAE.');
+      setMeta('robots', 'index, follow');
+    }
+
     if (pathname === '/checkout' || pathname === '/cart') {
       const isCheckout = pathname === '/checkout';
       document.title = `${isCheckout ? 'Checkout' : 'Shopping Cart'} | Messara Living`;
@@ -25,6 +49,11 @@ export default function PageSeo() {
     }
 
     if (pathname.startsWith('/product/') || pathname.includes('/products/')) {
+      setMeta('robots', 'index, follow');
+      return undefined;
+    }
+
+    if (/^\/(projects|blog)\/[^/]+/.test(pathname)) {
       setMeta('robots', 'index, follow');
       return undefined;
     }

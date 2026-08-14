@@ -5,10 +5,7 @@ import { cilCart, cilHeart } from '@coreui/icons';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
 import { isProductInStock } from '../utils/productStock';
-
-function formatPrice(value) {
-  return `AED ${Number(value || 0).toFixed(2)}`;
-}
+import { formatCurrency } from '../utils/price';
 
 export default function StoreProductCard({ product }) {
   const navigate = useNavigate();
@@ -19,6 +16,9 @@ export default function StoreProductCard({ product }) {
   const [message, setMessage] = useState('');
   const favorite = isFavorite(product.id);
   const hasDiscount = Number(product.discount_price || 0) > 0;
+  const savingPercent = hasDiscount && Number(product.price || 0) > 0
+    ? Math.max(1, Math.round(((Number(product.price) - Number(product.discount_price)) / Number(product.price)) * 100))
+    : 0;
   const inStock = isProductInStock(product);
 
   async function runStoreAction(action, callback) {
@@ -43,14 +43,14 @@ export default function StoreProductCard({ product }) {
     <article className="store-product-card">
       <Link to={`/product/${product.slug}`} className="store-product-media">
         {product.image_url ? <img src={product.image_url} alt={product.name} /> : <span>{product.name?.charAt(0)}</span>}
-        {hasDiscount && <span className="product-sale-badge">Sale</span>}
+        {hasDiscount && <span className="product-sale-badge">Save {savingPercent}%</span>}
       </Link>
       <div className="store-product-copy">
         <span className="store-product-brand">{product.brand?.name || product.category?.name || 'MessaraLiving'}</span>
         <Link to={`/product/${product.slug}`}><h3>{product.name}</h3></Link>
         <div className="store-product-price">
-          {hasDiscount && <small>{formatPrice(product.price)}</small>}
-          <strong className={hasDiscount ? 'is-sale' : ''}>{formatPrice(product.discount_price || product.price)}</strong>
+          {hasDiscount && <small>{formatCurrency(product.price)}</small>}
+          <strong className={hasDiscount ? 'is-sale' : ''}>{formatCurrency(product.discount_price || product.price)}</strong>
         </div>
         <div className="store-product-actions">
           <button

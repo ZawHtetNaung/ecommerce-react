@@ -6,11 +6,7 @@ import { cilPen, cilTrash } from '@coreui/icons';
 import AppDataTable from '../components/AppDataTable';
 import { deleteProduct, fetchProducts } from '../api/client';
 import { getProductStockQuantity, isProductInStock } from '../utils/productStock';
-
-function formatPrice(value) {
-  const numberValue = Number(value || 0);
-  return Number.isFinite(numberValue) ? numberValue.toFixed(2) : '0.00';
-}
+import { formatAmount } from '../utils/price';
 
 export default function ProductListPage() {
   const navigate = useNavigate();
@@ -132,12 +128,12 @@ export default function ProductListPage() {
           if (discount > 0) {
             return (
               <span className="event-product-price">
-                <span className="price-old">AED {formatPrice(row.price)}</span>
-                <span className="price-discount">AED {formatPrice(discount)}</span>
+                <span className="price-old">AED {formatAmount(row.price)}</span>
+                <span className="price-discount">AED {formatAmount(discount)}</span>
               </span>
             );
           }
-          return `AED ${formatPrice(row.price)}`;
+          return `AED ${formatAmount(row.price)}`;
         },
       },
       {

@@ -156,12 +156,13 @@ class CartController extends Controller
                 'product.category:id,name,slug',
                 'product.subCategory:id,category_id,name,slug',
                 'product.brand:id,name',
+                'product.event:id,name,discount_type,discount_value,is_active,starts_at,ends_at',
                 'product.images',
             ])
             ->latest()
             ->get()
             ->map(function (CartItem $item): array {
-                $unitPrice = (float) ($item->product->discount_price ?: $item->product->price);
+                $unitPrice = $item->product->effectiveUnitPrice();
                 $isAvailable = $item->product->is_active
                     && $item->product->is_in_stock
                     && $item->product->stock >= $item->quantity;

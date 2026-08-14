@@ -15,6 +15,7 @@ import {
   fetchQuotationRequests,
   updateQuotationRequest,
 } from '../api/client';
+import { formatCurrency as money } from '../utils/price';
 
 const statuses = [
   ['new', 'New'],
@@ -22,10 +23,6 @@ const statuses = [
   ['quoted', 'Quoted'],
   ['closed', 'Closed'],
 ];
-
-function money(value) {
-  return `AED ${Number(value || 0).toFixed(2)}`;
-}
 
 function formatDate(value) {
   if (!value) return '-';

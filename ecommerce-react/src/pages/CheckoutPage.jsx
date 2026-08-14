@@ -5,6 +5,7 @@ import StorefrontHeader from '../components/StorefrontHeader';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
 import { isCartItemAvailable } from '../utils/productStock';
+import { formatCurrency as money } from '../utils/price';
 
 const UAE_AREAS = [
   { code: 'DXB', label: 'Dubai' },
@@ -19,10 +20,6 @@ const UAE_AREAS = [
   { code: 'RAK', label: 'Ras Al Khaimah' },
   { code: 'UAQ', label: 'Umm Al Quwain' },
 ];
-
-function money(value) {
-  return `AED ${Number(value || 0).toFixed(2)}`;
-}
 
 function requestMessage(error, fallback = 'Unable to calculate delivery right now.') {
   const validationErrors = error.response?.data?.errors;

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -90,6 +91,58 @@ class Product extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    public function scopeWithCurrentOffer(Builder $query, $at = null): Builder
+    {
+        return $query
+            ->whereNotNull('discount_price')
+            ->where('discount_price', '>', 0)
+            ->whereColumn('discount_price', '<', 'price')
+            ->where(function (Builder $offerQuery) use ($at): void {
+                $offerQuery
+                    ->whereNull('event_id')
+                    ->orWhereHas('event', fn (Builder $eventQuery) => $eventQuery->currentlyActive($at));
+            });
+    }
+
+    public function currentDiscountPrice(): ?float
+    {
+        return $this->resolveCurrentDiscountPrice($this->getRawOriginal('discount_price'));
+    }
+
+    public function effectiveUnitPrice(): float
+    {
+        return $this->currentDiscountPrice() ?? max(0, (float) $this->getRawOriginal('price'));
+    }
+
+    public function getDiscountPriceAttribute($value): ?string
+    {
+        $discount = $this->resolveCurrentDiscountPrice($value);
+
+        return $discount === null ? null : number_format($discount, 2, '.', '');
+    }
+
+    private function resolveCurrentDiscountPrice($value): ?float
+    {
+        $discount = (float) ($value ?? 0);
+        $price = (float) ($this->getRawOriginal('price') ?? 0);
+
+        if ($discount <= 0 || $price <= 0 || $discount >= $price) {
+            return null;
+        }
+
+        if ($this->event_id !== null) {
+            $event = $this->relationLoaded('event')
+                ? $this->getRelation('event')
+                : $this->event()->first();
+
+            if (! $event?->isCurrentlyActive()) {
+                return null;
+            }
+        }
+
+        return round($discount, 2);
     }
 
     public function images(): HasMany

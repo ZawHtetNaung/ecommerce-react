@@ -39,7 +39,7 @@ class QuotationRequestController extends Controller
         ]);
 
         $products = Product::query()
-            ->with(['images', 'colors', 'sizeOptions'])
+            ->with(['images', 'colors', 'sizeOptions', 'event'])
             ->where('is_active', true)
             ->whereIn('id', collect($validated['items'])->pluck('product_id'))
             ->get()
@@ -150,8 +150,7 @@ class QuotationRequestController extends Controller
             }
 
             $quantity = (int) $submitted['quantity'];
-            $discountPrice = (float) ($product->discount_price ?? 0);
-            $unitPrice = $discountPrice > 0 ? $discountPrice : (float) $product->price;
+            $unitPrice = $product->effectiveUnitPrice();
             $selectedProductImageId = (int) ($selectedColor?->pivot?->product_image_id ?? 0);
             $quoteImage = $selectedProductImageId
                 ? $product->images->firstWhere('id', $selectedProductImageId)

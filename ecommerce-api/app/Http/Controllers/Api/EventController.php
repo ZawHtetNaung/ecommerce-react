@@ -14,10 +14,26 @@ class EventController extends Controller
     {
         return response()->json(
             Event::query()
-                ->where('is_active', true)
+                ->currentlyActive()
+                ->whereHas('products', function ($query): void {
+                    $query
+                        ->where('is_active', true)
+                        ->where('is_in_stock', true)
+                        ->where('stock', '>', 0)
+                        ->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('is_active', true))
+                        ->whereHas('subCategory', fn ($subCategoryQuery) => $subCategoryQuery->where('is_active', true))
+                        ->withCurrentOffer();
+                })
                 ->with([
                     'products' => function ($query) {
-                        $query->where('is_active', true)->with('images');
+                        $query
+                            ->where('is_active', true)
+                            ->where('is_in_stock', true)
+                            ->where('stock', '>', 0)
+                            ->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('is_active', true))
+                            ->whereHas('subCategory', fn ($subCategoryQuery) => $subCategoryQuery->where('is_active', true))
+                            ->withCurrentOffer()
+                            ->with(['images', 'event']);
                     },
                 ])
                 ->orderByRaw('starts_at is null, starts_at asc')

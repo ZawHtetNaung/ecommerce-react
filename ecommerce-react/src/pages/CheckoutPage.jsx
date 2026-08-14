@@ -305,14 +305,8 @@ export default function CheckoutPage() {
               {Number(quote?.discount || 0) > 0 && (
                 <div className="checkout-discount-row"><span>Discount</span><strong>−{money(quote.discount)}</strong></div>
               )}
-              {Number(quote?.tax?.added_amount || 0) > 0 && (
-                <div><span>VAT (5%)</span><strong>{money(quote.tax.added_amount)}</strong></div>
-              )}
-              {Number(quote?.tax?.included_amount || 0) > 0 && (
-                <div className="checkout-included-tax-row">
-                  <span>VAT included (5%)</span>
-                  <strong>{money(quote.tax.included_amount)}</strong>
-                </div>
+              {Number(quote?.tax?.amount || 0) > 0 && (
+                <div><span>VAT (5%)</span><strong>{money(quote.tax.amount)}</strong></div>
               )}
               <div><span>Delivery</span><strong aria-live="polite" className={quote?.shipping?.is_free ? 'is-free' : ''}>{quoteLoading ? 'Calculating...' : !form.emirate_code ? 'Select area' : quote ? (quote.shipping.is_free ? 'Free' : money(shippingAmount)) : 'Unavailable'}</strong></div>
               <div className="checkout-total"><span>Total</span><strong>{quote ? money(quote.total) : '—'}</strong></div>
